@@ -16,10 +16,12 @@ load_dotenv()
 ## 加载环境变量
 # ==================== 强制修复 DeepSeek 配置 (开始) ====================
 # 1. 强制指定 API 地址 (DeepSeek 官方必须带 /v1)
-LLM_BASE_URL = "https://api.deepseek.com/v1"
+# 这里的默认值写死没关系，因为地址不是敏感信息
+LLM_BASE_URL = os.getenv('LLM_BASE_URL', "https://api.deepseek.com/v1")
 
-# 2. 强制指定 API Key
-LLM_API_KEY = "sk-65c32cee8b21420cb072b20ecf53e860"
+# 2. 【关键】Key 改回从环境变量读取
+# 如果 .env 里没读到，就会报错，而不是泄露 Key
+LLM_API_KEY = os.getenv('LLM_API_KEY')
 
 # 3. 强制指定模型名称 (DeepSeek V3)
 LLM_MODEL = "deepseek-chat"
