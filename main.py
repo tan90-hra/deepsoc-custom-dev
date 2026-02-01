@@ -1,4 +1,6 @@
 import os
+os.environ["LLM_API_BASE"] = "https://api.deepseek.com/v1"
+os.environ["OPENAI_API_BASE"] = "https://api.deepseek.com/v1"
 import sys
 import argparse
 import logging

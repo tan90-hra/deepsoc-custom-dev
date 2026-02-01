@@ -12,11 +12,43 @@ from app.utils.message_utils import create_standard_message
 from app.utils.mq_utils import RabbitMQPublisher
 import yaml
 import pika
-
+import re  # <---【新增这行】用于处理 Markdown 正则匹配
 import logging
 logger = logging.getLogger(__name__)
 
-
+def _robust_parse_response(response_text):
+    """
+    [新增] 增强型解析函数，自动去除 Markdown 代码块标记
+    解决 DeepSeek 等模型返回格式不标准导致解析失败的问题
+    """
+    try:
+        if not response_text:
+            return None
+            
+        text = response_text.strip()
+        
+        # 1. 尝试去除 Markdown 代码块包裹 (支持 yaml, json 或无标记)
+        # 匹配非贪婪模式的内容
+        pattern = r"```(?:yaml|json)?\s*(.*?)\s*```"
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            text = match.group(1).strip()
+        
+        # 2. 尝试 YAML 解析 (JSON 也是合法的 YAML，所以这一步通吃)
+        return yaml.safe_load(text)
+        
+    except Exception as e:
+        logger.warning(f"常规解析失败，尝试兜底提取 JSON/YAML: {e}")
+        # 3. 兜底策略：尝试提取最外层的 {} 或 []
+        try:
+            # 寻找最外层的对象或数组
+            match = re.search(r"(\{.*\}|\[.*\])", text, re.DOTALL)
+            if match:
+                return yaml.safe_load(match.group(0))
+        except Exception as e2:
+            logger.error(f"兜底解析也失败: {e2}")
+        
+        return None
 def get_events_to_process():
     """获取待处理的安全事件
     
@@ -121,7 +153,9 @@ def process_event(event, publisher: RabbitMQPublisher):
     logger.info(f"LLM Response for event {event.event_id}, round {round_id}:\n{response}")
     logger.info("--------------------------------")
     
-    parsed_response = parse_yaml_response(response)
+    #parsed_response = parse_yaml_response(response)
+    # 使用新的增强解析函数
+    parsed_response = _robust_parse_response(response)
     if not parsed_response:
         logger.error(f"解析LLM响应失败 for event {event.event_id}: {response}")
         # Create an error message for frontend

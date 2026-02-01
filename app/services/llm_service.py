@@ -9,11 +9,29 @@ from app.models.models import db, LLMRecord
 load_dotenv()
 
 # 大模型配置
-LLM_BASE_URL = os.getenv('LLM_BASE_URL', 'https://api.openai.com/v1')
-LLM_API_KEY = os.getenv('LLM_API_KEY')
-LLM_MODEL = os.getenv('LLM_MODEL', 'gpt-4o-mini')
-LLM_MODEL_LONG_TEXT = os.getenv('LLM_MODEL_LONG_TEXT', 'qwen-long')
-LLM_TEMPERATURE = float(os.getenv('LLM_TEMPERATURE', 0.6))
+#LLM_BASE_URL = os.getenv('LLM_BASE_URL', 'https://api.openai.com/v1')
+#LLM_API_KEY = os.getenv('LLM_API_KEY')
+#LLM_MODEL = os.getenv('LLM_MODEL', 'gpt-4o-mini')
+#LLM_MODEL_LONG_TEXT = os.getenv('LLM_MODEL_LONG_TEXT', 'qwen-long')
+## 加载环境变量
+# ==================== 强制修复 DeepSeek 配置 (开始) ====================
+# 1. 强制指定 API 地址 (DeepSeek 官方必须带 /v1)
+LLM_BASE_URL = "https://api.deepseek.com/v1"
+
+# 2. 强制指定 API Key
+LLM_API_KEY = "sk-65c32cee8b21420cb072b20ecf53e860"
+
+# 3. 强制指定模型名称 (DeepSeek V3)
+LLM_MODEL = "deepseek-chat"
+
+# 4. 长文本模型也强制指向 deepseek-chat (或 deepseek-coder)
+LLM_MODEL_LONG_TEXT = "deepseek-chat"
+
+# 5. 温度保持默认
+LLM_TEMPERATURE = 0.6
+# ==================== 强制修复 DeepSeek 配置 (结束) ====================
+
+# 注意：请确保下方没有任何代码再次覆盖上述变量LLM_TEMPERATURE = float(os.getenv('LLM_TEMPERATURE', 0.6))
 
 def call_llm(system_prompt, user_prompt, history=None, temperature=None, long_text=False):
     """调用大模型API
