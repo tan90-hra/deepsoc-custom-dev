@@ -10,6 +10,7 @@ from app.services.prompt_service import PromptService
 from app.utils.message_utils import create_standard_message
 from app.utils.mq_utils import RabbitMQPublisher
 import pika
+import re  # <--- 必须添加这行
 import yaml
 import logging
 logger = logging.getLogger(__name__)
@@ -114,8 +115,21 @@ def process_action_group(event_id, round_id, actions, publisher: RabbitMQPublish
     logger.info(f"Operator LLM Response for event {event_id}, round {round_id}:\n{response}")
     logger.info("--------------------------------")
 
-    # 解析响应
-    parsed_response = parse_yaml_response(response)
+    # 解析响应废物代码
+    ##parsed_response = parse_yaml_response(response)
+    # 使用新的增强解析函数
+    # 1. 尝试清洗 Markdown 标记 (```yaml ... ```)
+    clean_text = response.strip()
+    match = re.search(r"```(?:yaml|json)?\s*(.*?)\s*```", clean_text, re.DOTALL)
+    if match:
+        clean_text = match.group(1).strip()
+    
+    # 2. 尝试解析
+    try:
+        parsed_response = yaml.safe_load(clean_text)
+    except Exception:
+        # 如果失败，尝试使用原来的 parse_yaml_response 作为备选
+        parsed_response = parse_yaml_response(response)
     if not parsed_response:
         logger.error(f"Operator解析LLM响应失败 for event {event_id}: {response}")
         error_content = {"text": "安全操作员未能正确解析LLM响应数据。", "original_response": response}

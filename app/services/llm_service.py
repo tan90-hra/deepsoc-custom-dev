@@ -22,7 +22,6 @@ LLM_BASE_URL = os.getenv('LLM_BASE_URL', "https://api.deepseek.com/v1")
 # 2. 【关键】Key 改回从环境变量读取
 # 如果 .env 里没读到，就会报错，而不是泄露 Key
 LLM_API_KEY = os.getenv('LLM_API_KEY')
-
 # 3. 强制指定模型名称 (DeepSeek V3)
 LLM_MODEL = "deepseek-chat"
 

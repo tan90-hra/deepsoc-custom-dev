@@ -11,6 +11,7 @@ from app.utils.message_utils import create_standard_message
 from app.utils.mq_utils import RabbitMQPublisher
 import pika
 import yaml
+import re
 import logging
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,19 @@ def process_task_group(event_id, round_id, tasks, publisher: RabbitMQPublisher):
     logger.info(f"Manager LLM Response for event {event_id}, round {round_id}:\n{response}")
     logger.info("--------------------------------")
     
-    parsed_response = parse_yaml_response(response)
+    #parsed_response = parse_yaml_response(response)
+    # 1. 尝试清洗 Markdown 标记 (```yaml ... ```)
+    clean_text = response.strip()
+    match = re.search(r"```(?:yaml|json)?\s*(.*?)\s*```", clean_text, re.DOTALL)
+    if match:
+        clean_text = match.group(1).strip()
+    
+    # 2. 尝试解析
+    try:
+        parsed_response = yaml.safe_load(clean_text)
+    except Exception:
+        # 如果失败，尝试使用原来的 parse_yaml_response 作为备选
+        parsed_response = parse_yaml_response(response)
     if not parsed_response:
         logger.error(f"Manager解析LLM响应失败 for event {event_id}: {response}")
         error_content = {"text": "安全经理未能正确解析LLM响应数据，请检查日志。", "original_response": response}
